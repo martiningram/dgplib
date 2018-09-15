@@ -53,8 +53,15 @@ class SwitchedKernel(Combination):
         for gram, p, p2 in zip(Ks, ind_X_parts, ind_X2_parts):
             p2 = p2[:,None]
             shape = tf.stack([N2, tf.shape(p)[0]])
-            scattered = tf.transpose(tf.scatter_nd(p2, tf.transpose(gram),
-                                                   shape))
+
+            # Handle the case when there is a zero
+            scattered = tf.cond(shape[1] > 0,
+                                lambda: tf.transpose(
+                                    tf.scatter_nd(p2, tf.transpose(gram),
+                                                  shape)),
+                                lambda: tf.transpose(
+                                    tf.constant(np.nan, dtype=tf.float64,
+                                                shape=shape)))
             Ks_scattered.append(scattered)
 
         return tf.dynamic_stitch(ind_X_parts, Ks_scattered)
@@ -68,5 +75,6 @@ class SwitchedKernel(Combination):
         ind_X_parts = tf.dynamic_partition(tf.range(0, tf.size(ind_X)),
                                            ind_X, self.output_dim)
 
-        Ks = [k.Kdiag(tf.gather(X, p)) for k, p in zip(self.kernels, ind_X_parts)]
+        Ks = [k.Kdiag(tf.gather(X, p)) for k, p in zip(
+            self.kernels, ind_X_parts)]
         return tf.dynamic_stitch(ind_X_parts, Ks)
