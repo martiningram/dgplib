@@ -60,8 +60,7 @@ class SwitchedKernel(Combination):
                                     tf.scatter_nd(p2, tf.transpose(gram),
                                                   shape)),
                                 lambda: tf.transpose(
-                                    tf.constant(np.nan, dtype=tf.float64,
-                                                shape=shape)))
+                                    tf.zeros(dtype=tf.float64, shape=shape)))
             Ks_scattered.append(scattered)
 
         return tf.dynamic_stitch(ind_X_parts, Ks_scattered)
